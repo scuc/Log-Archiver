@@ -9,18 +9,17 @@ from time import localtime, strftime
 
 
 import config as cfg
+import zip_logs as ziplogs
 
 logger = logging.getLogger(__name__)
 
 config = cfg.get_config()
-script_root = config['paths']['script_root']
-
 
 def set_logger():
     """
     Setup logging configuration
     """
-    path = os.path.join(script_root, 'logging.yaml')
+    path = './logging.yaml'
 
     with open(path, 'rt') as f:
         config = yaml.safe_load(f.read())
@@ -45,32 +44,32 @@ def set_logger():
 
 def main(): 
     """
-    Script will run on the 1st of the month at 00:00:00AM, walk all the directories in a given
-    source path, for any subdirectories named "_logs" it will create a ZIP archive of the daily logs
-    from the previous month. 
+    Script will run on the 1st of the month at 00:00:00AM, for any subdirectories named "_logs" given inthe config.yaml
+    it will create a ZIP archive of the daily logs from the previous month. 
     """
 
     date_start = str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))
 
     start_msg = f"\n\
     ==================================================================================\n\
-                 - Start - {date_start} \n\
+                 Log Archiver - Start - {date_start} \n\
     ==================================================================================\n\
    "
 
     logger.info(start_msg)
 
+    ziplogs.log_checks()
 
+    complete_msg()
 
     
-def complete_msg(media_summary):
+def complete_msg():
 
     date_end = str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))
 
-
     complete_msg = f"\n\
     ================================================================================\n\
-                 - Complete - {date_end} \n\
+                 Log Archiver - Complete - {date_end} \n\
     ================================================================================\n\
     "
 
