@@ -29,7 +29,7 @@ def get_date():
     return year, month, day
 
 
-def log_checks(logs_path_list):
+def log_checks():
     """
     Check the given log folder paths and create a list of all the log files in each. 
     Only list the log files with a datestamp that contains the previous month.
@@ -38,22 +38,23 @@ def log_checks(logs_path_list):
 
     year, month, day = get_date()
     prev_month = int(month) - 1
+    
+    if len(str(prev_month)) != 2: 
+        prev_month = "0"+ str(prev_month)
 
-    for logpath in logs_path_list:
+    for logpath in logs_list:
         log_files = sorted(
                             [
                             x for x in os.listdir(logpath) 
                             if x.endswith('.log')
-                            if x[-7:-6] == str(prev_month)
+                            if x[-8:-6] == str(prev_month)
                             ]
                         )
-        
-        print(f"LOG PATH:   {logpath}")
-        print(f"LOG FILE LIST:  \n {log_files}")
-        zip_logs(logpath, log_files)
+
+        zip_logs(logpath, log_files, prev_month)
 
 
-def zip_logs(logpath, log_files):
+def zip_logs(logpath, log_files, prev_month):
     """
     Compress the list of log files into a zip archive, then delete the logs that were archived.
     """
@@ -62,8 +63,8 @@ def zip_logs(logpath, log_files):
     compression = zipfile.ZIP_DEFLATED
 
     year, month, day = get_date()
-    prev_month = int(month) - 1
-    zip_filename = f"{year}{prev_month}{day}_logs.zip"
+
+    zip_filename = f"{year}-{prev_month}_logs.zip"
 
     with zipfile.ZipFile(zip_filename, 'w', compression=compression) as zipObj:
 
@@ -101,4 +102,4 @@ def delete_logs(logpath, log_files):
     return 
 
 if __name__ == '__main__':
-    log_checks(["/Users/stevencucolo/Desktop/_logs"])
+    log_checks()
