@@ -1,6 +1,7 @@
 
 import logging
 import os
+import re 
 import zipfile
 
 from datetime import datetime
@@ -12,94 +13,80 @@ import config as cfg
 logger = logging.getLogger(__name__)
 
 config = cfg.get_config()
-logs_list = config['paths']['logs_path_list']
+logpath_list = config['paths']['logs_path_list']
 
 
-def get_date(): 
-
-    """
-    get todays date and time, use the month value to build a list of log files.
-    """
-
-    today = datetime.today()
-    year = today.strftime('%Y')
-    month = today.strftime('%m')
-    day = today.strftime('%d')
-
-    return year, month, day
-
-
-def log_checks():
-    """
-    Check the given log folder paths and create a list of all the log files in each. 
-    Only list the log files with a datestamp that contains the previous month.
-    Pass the list of log files to the 'zip_logs' function and create a zip archive. 
-    """
-
-    year, month, day = get_date()
-    prev_month = int(month) - 1
-    
-    if len(str(prev_month)) != 2: 
-        prev_month = "0"+ str(prev_month)
-
-    for logpath in logs_list:
-        log_files = sorted(
-                            [
-                            x for x in os.listdir(logpath) 
-                            if x.endswith('.log')
-                            if x[-8:-6] == str(prev_month)
-                            ]
-                        )
-
-        zip_logs(logpath, log_files, prev_month)
-
-
-def zip_logs(logpath, log_files, prev_month):
+def zip_log(logpath, log, date):
     """
     Compress the list of log files into a zip archive, then delete the logs that were archived.
     """
+
+    # print(f"LOGPATH: {logpath}")
+    # print(f"LOG: {log}")
+    # print(f"DATE: {date}")
+    
     os.chdir(logpath)
 
     compression = zipfile.ZIP_DEFLATED
+    log_filename = os.path.basename(log)
+    logfile_date = re.split(r'_|\W+', log_filename)
 
-    year, month, day = get_date()
+    if not int(logfile_date[1]) == ValueError:
+        logfile_year = logfile_date[1][:4]
+        logefile_month = logfile_date[1][4:6]
+        zip_filename = f"{logfile_year}-{logefile_month}_logs.zip"
 
-    zip_filename = f"{year}-{prev_month}_logs.zip"
+        filename_msg = f"zip filename: {zip_filename}"
+        logger.info(filename_msg)
 
-    with zipfile.ZipFile(zip_filename, 'w', compression=compression) as zipObj:
+    else: 
+        log.error(f"ValueError for the date on: {log_filename}")
+        return ValueError
 
-        for log in log_files:
-            zipObj.write(log)
-
+    
     try:
-        archive = zipfile.ZipFile(zip_filename, 'r')
-        test_result = archive.testzip()
+        zippath = Path(logpath, zip_filename)
 
-        if test_result == None: 
-            zip_sucess_msg = f"{zip_filename} test sucessful."
-            logger.info(zip_sucess_msg)
-            archive_namelist_msg = f"Archived logs: {archive.namelist()}"
-            logger.info(archive_namelist_msg)
-            delete_logs(logpath, log_files)
-            return
-        else: 
-            zip_fail_msg = f"{zip_filename} test failed. \n test results: {test_result}"
-            logger.info(zip_fail_msg)
-            return 
+        with zipfile.ZipFile(zippath, mode='a', compression=compression) as zipObj:
 
-    except zipfile.BadZipfile as e: 
-        logger.error(e)
+            zipObj.write(Path(log))
+            zipObj.close()
+            
+            print("")
+            print(f"{log_filename} WAS WRITTEN TO THE ZIP {zip_filename}")
+            print("")
+            
+            archive = zipfile.ZipFile(zippath, mode='r')
+            print("***********  NOW TESTINGZ ZIP *************")
+            test_result = archive.testzip()
+
+            if test_result == None: 
+                zip_sucess_msg = f"{zip_filename} test sucessful."
+                logger.info(zip_sucess_msg)
+                archive_namelist_msg = f"Archived log: {log_filename}"
+                logger.info(archive_namelist_msg)
+                delete_logs(logpath, log)
+                return
+            else: 
+                zip_fail_msg = f"Failed to zip {log_filename} in archive: {zip_filename}. \n test results: {test_result}"
+                logger.info(zip_fail_msg)
+                return 
+
+    except zipfile.BadZipfile as error: 
+        logger.error(error)
+        return
 
 
-def delete_logs(logpath, log_files):
+def delete_logs(logpath, log):
     """
     Delete all log files in the given list of logs.
     """
-    for log in log_files: 
-        logpath = Path(log)
-        logpath.unlink()
+
+    logpath = Path(log)
+    logpath.unlink()
+    print(f"LOG DELETED: {log}")
 
     return 
 
 if __name__ == '__main__':
-    log_checks()
+    get_logs()

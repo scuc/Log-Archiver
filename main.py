@@ -1,13 +1,13 @@
-import datetime
 import json
 import logging
 import logging.config
 import os
 import yaml
 
+from datetime import datetime, date
 from time import localtime, strftime
 
-
+import cleanup as cleanup
 import config as cfg
 import zip_logs as ziplogs
 
@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 config = cfg.get_config()
 
+
 def set_logger():
     """
     Setup logging configuration
     """
-    path = './logging.yaml'
+    path = '/Users/admin/Scripts/Log_Archiver/logging.yaml'
 
     with open(path, 'rt') as f:
         config = yaml.safe_load(f.read())
@@ -29,13 +30,13 @@ def set_logger():
             if 'filename' in config['handlers'][i]:
                 log_filename = config["handlers"][i]["filename"]
                 base, extension = os.path.splitext(log_filename)
-                today = datetime.datetime.today()
+                today = datetime.today()
                 log_filename = "{}_{}{}".format(base,
                                                 today.strftime("%Y%m%d"),
                                                 extension)
                 config["handlers"][i]["filename"] = log_filename
             else:
-                print("+++++++++++++++ ERROR STARTING LOG FILE ++++++++++++++++")
+                continue
 
         logger = logging.config.dictConfig(config)
 
@@ -47,7 +48,6 @@ def main():
     Script will run on the 1st of the month at 00:00:00AM, for any subdirectories named "_logs" given inthe config.yaml
     it will create a ZIP archive of the daily logs from the previous month. 
     """
-
     date_start = str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))
 
     start_msg = f"\n\
@@ -58,7 +58,18 @@ def main():
 
     logger.info(start_msg)
 
-    ziplogs.log_checks()
+    date = datetime.today()
+    # year = date.year
+    # month = date.month
+    # day = date.day
+
+    if not date.day == 1: 
+        cleanup.daily_cleanup(date)
+    elif (date.day == 1 and date.month == 1):
+        date.year = date.year - 1
+        cleanup.daily_cleanup(date)
+    else:
+        cleanup.daily_cleanup(date)
 
     complete_msg()
 
