@@ -2,10 +2,10 @@ import json
 import logging
 import logging.config
 import os
-import yaml
-
-from datetime import datetime, date
+from datetime import date, datetime
 from time import localtime, strftime
+
+import yaml
 
 import cleanup as cleanup
 import config as cfg
@@ -20,20 +20,20 @@ def set_logger():
     """
     Setup logging configuration
     """
-    path = '/Users/admin/Scripts/Log_Archiver/logging.yaml'
+    path = "/Users/admin/Scripts/Log_Archiver/logging.yaml"
 
-    with open(path, 'rt') as f:
+    with open(path, "rt") as f:
         config = yaml.safe_load(f.read())
 
-    # get the file name from the handlers, append the date to the filename. 
-        for i in (config["handlers"].keys()):
-            if 'filename' in config['handlers'][i]:
+        # get the file name from the handlers, append the date to the filename.
+        for i in config["handlers"].keys():
+            if "filename" in config["handlers"][i]:
                 log_filename = config["handlers"][i]["filename"]
                 base, extension = os.path.splitext(log_filename)
                 today = datetime.today()
-                log_filename = "{}_{}{}".format(base,
-                                                today.strftime("%Y%m%d"),
-                                                extension)
+                log_filename = "{}_{}{}".format(
+                    base, today.strftime("%Y%m%d"), extension
+                )
                 config["handlers"][i]["filename"] = log_filename
             else:
                 continue
@@ -43,12 +43,12 @@ def set_logger():
     return logger
 
 
-def main(): 
+def main():
     """
     Script will run on the 1st of the month at 00:00:00AM, for any subdirectories named "_logs" given inthe config.yaml
-    it will create a ZIP archive of the daily logs from the previous month. 
+    it will create a ZIP archive of the daily logs from the previous month.
     """
-    date_start = str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))
+    date_start = str(strftime("%A, %d. %B %Y %I:%M%p", localtime()))
 
     start_msg = f"\n\
     ==================================================================================\n\
@@ -63,9 +63,9 @@ def main():
     # month = date.month
     # day = date.day
 
-    if not date.day == 1: 
+    if not date.day == 1:
         cleanup.daily_cleanup(date)
-    elif (date.day == 1 and date.month == 1):
+    elif date.day == 1 and date.month == 1:
         date.year = date.year - 1
         cleanup.daily_cleanup(date)
     else:
@@ -73,10 +73,10 @@ def main():
 
     complete_msg()
 
-    
+
 def complete_msg():
 
-    date_end = str(strftime('%A, %d. %B %Y %I:%M%p', localtime()))
+    date_end = str(strftime("%A, %d. %B %Y %I:%M%p", localtime()))
 
     complete_msg = f"\n\
     ================================================================================\n\
@@ -89,6 +89,6 @@ def complete_msg():
     return
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     set_logger()
     main()
